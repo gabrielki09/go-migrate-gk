@@ -7,7 +7,6 @@ const (
 	CommandDown   Command = "down"
 	CommandFresh  Command = "fresh"
 	CommandStatus Command = "status"
-	CommandCreate Command = "create"
 )
 
 type Options struct {

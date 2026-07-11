@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -115,78 +114,6 @@ func createFileWithContent(migrationName, path, content string) error {
 	return nil
 }
 
-func runCreateFile(path string, tableNames any) error {
-	version := time.Now().Format("20060102150405")
-
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
-		return fmt.Errorf("erro ao criar diretório de migrations: %w", err)
-	}
-
-	switch tableNames.(type) {
-	case string:
-		tableName := tableNames.(string)
-		if strings.TrimSpace(tableName) == "" {
-			return fmt.Errorf("nome da tabela é obrigatório")
-		}
-
-		// 20060102150405_create_tableName.up.sql
-		// 20060102150405_create_tableName.down.sql
-
-		tableName = normalizeMigrationName(tableName)
-
-		upFileName := fmt.Sprintf("%s_create_%s.up.sql", version, tableName)
-		downFileName := fmt.Sprintf("%s_create_%s.down.sql", version, tableName)
-
-		upContent := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-				created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-				updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-				deleted_at TIMESTAMPTZ NULL
-			);`, tableName)
-
-		downContent := fmt.Sprintf(`DROP TABLE IF EXISTS %s;`, tableName)
-
-		if err := createFileWithContent(upFileName, path, upContent); err != nil {
-			return err
-		}
-
-		if err := createFileWithContent(downFileName, path, downContent); err != nil {
-			return err
-		}
-	case []string:
-		for _, tableName := range tableNames.([]string) {
-			if strings.TrimSpace(tableName) == "" {
-				return fmt.Errorf("nome da tabela é obrigatório")
-			}
-
-			// 20060102150405_create_tableName.up.sql
-			// 20060102150405_create_tableName.down.sql
-
-			tableName = normalizeMigrationName(tableName)
-
-			upFileName := fmt.Sprintf("%s_create_%s.up.sql", version, tableName)
-			downFileName := fmt.Sprintf("%s_create_%s.down.sql", version, tableName)
-
-			upContent := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-				created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-				updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-				deleted_at TIMESTAMPTZ NULL
-			);`, tableName)
-
-			downContent := fmt.Sprintf(`DROP TABLE IF EXISTS %s;`, tableName)
-
-			if err := createFileWithContent(upFileName, path, upContent); err != nil {
-				return err
-			}
-
-			if err := createFileWithContent(downFileName, path, downContent); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func Run(ctx context.Context, db *pgxpool.Pool, option Options) error {
 	path, err := resolveMigrationDir(option.Dir)
 
@@ -213,8 +140,6 @@ func Run(ctx context.Context, db *pgxpool.Pool, option Options) error {
 		return runFresh(ctx, db, migrations)
 	case CommandStatus:
 		return runStatus(ctx, db, migrations)
-	case CommandCreate:
-		return runCreateFile(path, option.ExtraArgs)
 	default:
 		return fmt.Errorf("comando de migration inválido: %s", option.Command)
 	}

@@ -10,19 +10,48 @@ import (
 func main() {
 	var (
 		modelFlag        = flag.String("model", "", "Comando para criação de arquivo padrão da model")
-		separateByFolder = flag.Bool("separate", false, "Comando para separação de pastas por model")
-		//makeAll          = flag.Bool("a", false, "Comando para separação de pastas por model")
+		uuidUse          = flag.Bool("uuid", false, "Comando para criação do model com uuid")
+		idUse            = flag.Bool("id", false, "Comando para criação do model com id (int)")
+		separateByFolder = flag.Bool("S", false, "Comando para separação de pastas por model")
+		requests         = flag.Bool("R", false, "Comando para criação da request")
+		resource         = flag.Bool("r", false, "Comando para criação de resources")
+		seed             = flag.Bool("s", false, "Comando para criação do seeder")
+		migration        = flag.Bool("m", false, "Comando para criação da migration")
+		controller       = flag.Bool("c", false, "Comando para criação do controller")
+		all              = flag.Bool("a", false, "Comando para separação de pastas por model")
 	)
 
 	flag.Parse()
 
-	if *modelFlag != "" {
-		log.Println(*modelFlag)
-		if err := model.Run(model.Options{
-			ModelName:        *modelFlag,
-			SeparateByFolder: *separateByFolder,
-		}); err != nil {
-			log.Fatal(err)
+	flags := make(map[string]bool)
+
+	if modelFlag == nil {
+		log.Fatal("flag model é obrigatória.")
+	}
+
+	flags["model"] = true
+	flags["uuid_use"] = *uuidUse
+	flags["id_use"] = *idUse
+	flags["separate_by_folder"] = *separateByFolder
+	flags["requests"] = *requests
+	flags["resource"] = *resource
+	flags["seed"] = *seed
+	flags["migration"] = *migration
+	flags["controller"] = *controller
+
+	if *all {
+		for key := range flags {
+			flags[key] = true
 		}
+	}
+
+	options := model.Options{
+		Name:             *modelFlag,
+		SeparateByFolder: flags["separate_by_folder"],
+		Command:          flags,
+	}
+
+	if err := model.Run(options); err != nil {
+		log.Fatal(err)
 	}
 }
