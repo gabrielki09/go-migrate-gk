@@ -1,4 +1,4 @@
-package model
+package scaffold
 
 type Options struct {
 	Name             string
