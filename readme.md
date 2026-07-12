@@ -52,7 +52,7 @@ func main() {
 
 Se `Dir` ficar vazio, o pacote usa `database/migration` a partir do diretório atual.
 
-### Padrao dos arquivos
+### Padrão dos arquivos
 
 Cada migration precisa ter um arquivo `.up.sql` e um `.down.sql` com a mesma versão e o mesmo nome:
 
