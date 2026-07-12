@@ -24,6 +24,12 @@ var commandRootDirs = map[string]string{
 	"controller": defaultRootControllerDir,
 }
 
+var technicalCommands = map[string]bool{
+	"uuid_use":           true,
+	"id_use":             true,
+	"separate_by_folder": true,
+}
+
 // func existsPath(path string) (bool, error) {
 // 	_, err := os.Stat(path)
 
@@ -60,7 +66,11 @@ func resolveFileDir(commands map[string]bool) (map[string]string, error) {
 		}
 
 		rootDir, exists := commandRootDirs[key]
-		if !exists && key != "uuid_use" && key != "id_use" {
+		if !exists {
+			if technicalCommands[key] {
+				continue
+			}
+
 			return nil, fmt.Errorf("comando inválido: %s", key)
 		}
 

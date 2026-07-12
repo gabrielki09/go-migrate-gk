@@ -79,7 +79,7 @@ func createModelFile(file File, option Options) error {
 	var modelId string
 
 	if option.Command["uuid_use"] {
-		modelId = "Uuid      string"
+		modelId = "UUID      string"
 	} else {
 		modelId = "ID        int"
 	}
@@ -252,10 +252,10 @@ func buildSeedContent(seed string) string {
 	pascalSeed := toPascalCase(seed)
 	pascalSeedWithSeed := pascalSeed + "Seed"
 
-	contentSql := `
-		INSERTO INTO your_table_name ()
+	contentSQL := "`" + `
+		INSERT INTO your_table_name ()
 		VALUES ()
-	`
+	` + "`"
 	content := fmt.Sprintf(`package %s
 
 	import (
@@ -274,7 +274,6 @@ func buildSeedContent(seed string) string {
 			if _, err := s.db.Exec(
 				s.ctx,
 				%s,
-				args,
 			); err != nil {
 				return err
 			}
@@ -284,7 +283,7 @@ func buildSeedContent(seed string) string {
 		return nil
 	}
 	
-`, packageName, pascalSeedWithSeed, pascalSeedWithSeed, pascalSeedWithSeed, contentSql)
+`, packageName, pascalSeedWithSeed, pascalSeedWithSeed, pascalSeedWithSeed, contentSQL)
 
 	return content
 }
@@ -307,7 +306,7 @@ func buildResourceContent(seed string, usageId string) string {
 
 	createdAtWithJson := fmt.Sprintf("CreatedAt time.Time `json:%s`", `"created_at"`)
 	updatedAtWithJson := fmt.Sprintf("UpdatedAt time.Time `json:%s`", `"updated_at"`)
-	deletedAtWithJson := fmt.Sprintf("DeletedAt time.Time `json:%s`", `"deleted_at"`)
+	deletedAtWithJson := fmt.Sprintf("DeletedAt *time.Time `json:%s`", `"deleted_at,omitempty"`)
 
 	content := fmt.Sprintf(`package %s
 
@@ -328,7 +327,7 @@ func createResourceFile(file File, option Options) error {
 	var usageId string
 
 	if option.Command["uuid_use"] {
-		usageId = fmt.Sprintf("Uuid      string    `json:%s`", `"uuid"`)
+		usageId = fmt.Sprintf("UUID      string    `json:%s`", `"uuid"`)
 	} else {
 		usageId = fmt.Sprintf("ID        int `json:%s`", `"id"`)
 	}
@@ -336,7 +335,7 @@ func createResourceFile(file File, option Options) error {
 	resourceFileName := fmt.Sprintf("%s_response.go", normalizeWithUnderline(file.Name))
 	resourceFileContent := buildResourceContent(file.Name, usageId)
 
-	if err := createFileWithContent(resourceFileName, resourceFileContent, file.FilePaths["seed"]); err != nil {
+	if err := createFileWithContent(resourceFileName, resourceFileContent, file.FilePaths["resource"]); err != nil {
 		return fmt.Errorf("erro ao criar o arquivo do resource: %w", err)
 	}
 

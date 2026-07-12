@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"strings"
 
 	"github.com/gabrielki09/go-migrate-gk/pkg/model"
 )
@@ -25,7 +26,7 @@ func main() {
 
 	flags := make(map[string]bool)
 
-	if modelFlag == nil {
+	if strings.TrimSpace(*modelFlag) == "" {
 		log.Fatal("flag model é obrigatória.")
 	}
 
@@ -41,6 +42,10 @@ func main() {
 
 	if *all {
 		for key := range flags {
+			if key == "uuid_use" || key == "id_use" {
+				continue
+			}
+
 			flags[key] = true
 		}
 	}
