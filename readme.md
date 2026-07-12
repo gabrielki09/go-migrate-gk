@@ -1,4 +1,4 @@
-# go-migrate-gk
+# go-scaffold-gk
 
 Ferramenta pessoal para migrations PostgreSQL usando `pgxpool`, com um gerador simples de arquivos base em Go.
 
@@ -7,7 +7,7 @@ A lib foi feita para o meu fluxo pessoal. Ela não pretende substituir ferrament
 ## Instalação
 
 ```bash
-go get github.com/gabrielki09/go-migrate-gk@latest
+go get github.com/gabrielki09/go-scaffold-gk@latest
 ```
 
 ## Migrations
@@ -15,7 +15,7 @@ go get github.com/gabrielki09/go-migrate-gk@latest
 Importe o pacote:
 
 ```go
-import migrator "github.com/gabrielki09/go-migrate-gk/pkg/migration"
+import migrator "github.com/gabrielki09/go-scaffold-gk/pkg/migration"
 ```
 
 Exemplo de uso:
@@ -29,7 +29,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	migrator "github.com/gabrielki09/go-migrate-gk/pkg/migration"
+	migrator "github.com/gabrielki09/go-scaffold-gk/pkg/migration"
 )
 
 func main() {
@@ -118,7 +118,7 @@ go run ./cmd/model -model users
 Uso via modulo:
 
 ```bash
-go run github.com/gabrielki09/go-migrate-gk/cmd/model@latest -model users
+go run github.com/gabrielki09/go-scaffold-gk/cmd/model@latest -model users
 ```
 
 A flag `-model` e obrigatória. Por padrão, o gerador sempre cria o arquivo de model em `models/`.
@@ -141,8 +141,8 @@ A flag `-model` e obrigatória. Por padrão, o gerador sempre cria o arquivo de 
 Observações do comportamento atual:
 
 - Não use `-uuid` e `-id` juntos; o comando retorna erro.
-- Se nem `-uuid` nem `-id` forem informados, o gerador usa ID inteiro.
-- A flag `-a` habilita `model`, `requests`, `resource`, `seed`, `migration` e `controller`; ela não habilita `uuid` nem `id`.
+- Se nem `-uuid` nem `-id` forem informados, o comando retorna erro.
+- A flag `-a` habilita `model`, `requests`, `resource`, `seed`, `migration` e `controller`; ela não habilita `uuid`, `id` nem `separate_by_folder`.
 - Os diretórios são criados automaticamente quando não existem.
 
 Exemplos:

@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/gabrielki09/go-migrate-gk/pkg/model"
+	scaffold "github.com/gabrielki09/go-scaffold-gk/pkg/scaffold"
 )
 
 func main() {
@@ -30,6 +30,14 @@ func main() {
 		log.Fatal("flag model é obrigatória.")
 	}
 
+	if *uuidUse && *idUse {
+		log.Fatal("somente um tipo de ID pode ser utilizado.")
+	}
+
+	if !*uuidUse && !*idUse {
+		log.Fatal("informe o tipo de ID: -uuid ou -id")
+	}
+
 	flags["model"] = true
 	flags["uuid_use"] = *uuidUse
 	flags["id_use"] = *idUse
@@ -42,7 +50,7 @@ func main() {
 
 	if *all {
 		for key := range flags {
-			if key == "uuid_use" || key == "id_use" {
+			if key == "uuid_use" || key == "id_use" || key == "separate_by_folder" {
 				continue
 			}
 
@@ -50,13 +58,13 @@ func main() {
 		}
 	}
 
-	options := model.Options{
+	options := scaffold.Options{
 		Name:             *modelFlag,
 		SeparateByFolder: flags["separate_by_folder"],
 		Command:          flags,
 	}
 
-	if err := model.Run(options); err != nil {
+	if err := scaffold.Run(options); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -1,4 +1,4 @@
-module github.com/gabrielki09/go-migrate-gk
+module github.com/gabrielki09/go-scaffold-gk
 
 go 1.24.0
 
