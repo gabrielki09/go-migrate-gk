@@ -3,6 +3,7 @@ package scaffold
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -10,6 +11,8 @@ var (
 	ErrModelNameRequired = errors.New("flag m é obrigatória")
 	ErrIDTypeRequired    = errors.New("informe o tipo de ID: -uuid ou -id")
 	ErrOnlyOneIDType     = errors.New("somente um tipo de ID pode ser utilizado")
+	ErrRootDirRequired   = errors.New("caminho principal não informado")
+	ErrRootDirNotExists  = errors.New("caminho principal não existe")
 )
 
 const (
@@ -36,6 +39,14 @@ var allowedCommands = map[string]struct{}{
 	CommandController:       {},
 }
 
+func exists(s string) error {
+	if _, err := os.Stat(s); err != nil && errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	return nil
+}
+
 func (o Options) Validate() error {
 	if strings.TrimSpace(o.Name) == "" {
 		return ErrModelNameRequired
@@ -58,8 +69,12 @@ func (o Options) Validate() error {
 		return ErrOnlyOneIDType
 	}
 
-	if !uuidUse && !idUse {
-		return ErrIDTypeRequired
+	if o.RootDir == "" {
+		return ErrRootDirRequired
+	}
+
+	if err := exists(o.RootDir); err != nil {
+		return ErrRootDirNotExists
 	}
 
 	return nil

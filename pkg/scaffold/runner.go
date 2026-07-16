@@ -5,15 +5,14 @@ func Run(option Options) error {
 		return err
 	}
 
-	dirs, err := resolveFileDir(option.Command)
+	dirs, err := resolveFileDir(option.Command, option.RootDir)
 	if err != nil {
 		return err
 	}
 
 	fileConfig := File{
-		Name:             option.Name,
-		FilePaths:        dirs,
-		SeparateByFolder: option.SeparateByFolder,
+		Name:      option.Name,
+		FilePaths: dirs,
 	}
 
 	return createFiles(fileConfig, option)

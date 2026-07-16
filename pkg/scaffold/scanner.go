@@ -7,27 +7,35 @@ import (
 )
 
 const (
-	defaultRootModelDir      = "models"
-	defaultRootRequestDir    = "requests"
-	defaultRootResourceDir   = "resource"
-	defaultRootSeedDir       = "seed"
-	defaultRootMigrationDir  = "migration"
+	defaultRootModelDir     = "models"
+	defaultRootRequestDir   = "requests"
+	defaultRootResourceDir  = "resource"
+	defaultRootSeedDir      = "seed"
+	defaultRootMigrationDir = "migration"
+
+	// Repo Pattern
 	defaultRootControllerDir = "controller"
+	defaultRootServiceDir    = "service"
+	defaultRootRoutesDir     = "routes"
+	defaultRootRepositoryDir = "repository"
 )
 
 var commandRootDirs = map[string]string{
-	"model":      defaultRootModelDir,
-	"migration":  defaultRootMigrationDir,
-	"requests":   defaultRootRequestDir,
-	"resource":   defaultRootResourceDir,
-	"seed":       defaultRootSeedDir,
+	"m":         defaultRootModelDir,
+	"migration": defaultRootMigrationDir,
+	"requests":  defaultRootRequestDir,
+	"resource":  defaultRootResourceDir,
+	"seed":      defaultRootSeedDir,
+
 	"controller": defaultRootControllerDir,
+	"service":    defaultRootServiceDir,
+	"routes":     defaultRootRoutesDir,
+	"repository": defaultRootRepositoryDir,
 }
 
 var technicalCommands = map[string]bool{
-	"uuid_use":           true,
-	"id_use":             true,
-	"separate_by_folder": true,
+	"uuid_use": true,
+	"id_use":   true,
 }
 
 func validatePathByKey(path string) (string, error) {
@@ -43,8 +51,13 @@ func validatePathByKey(path string) (string, error) {
 	return fullPath, nil
 }
 
-func resolveFileDir(commands map[string]bool) (map[string]string, error) {
+func resolveFileDir(commands map[string]bool, rootPath string) (map[string]string, error) {
 	allPaths := make(map[string]string)
+
+	commands["controller"] = true
+	commands["service"] = true
+	commands["routes"] = true
+	commands["repository"] = true
 
 	for key, enabled := range commands {
 		if !enabled {
@@ -60,7 +73,17 @@ func resolveFileDir(commands map[string]bool) (map[string]string, error) {
 			return nil, fmt.Errorf("comando inválido: %s", key)
 		}
 
-		validatedPath, err := validatePathByKey(rootDir)
+		var fullPath string
+
+		switch key {
+		case "m", "seed", "migration", "requests", "resource":
+			fullPath = rootDir
+
+		default:
+			fullPath = rootPath + "\\" + rootDir
+		}
+
+		validatedPath, err := validatePathByKey(fullPath)
 		if err != nil {
 			return nil, fmt.Errorf("erro ao validar o diretório de %s: %w", key, err)
 		}
@@ -69,5 +92,4 @@ func resolveFileDir(commands map[string]bool) (map[string]string, error) {
 	}
 
 	return allPaths, nil
-
 }

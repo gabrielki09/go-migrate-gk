@@ -86,8 +86,9 @@ func createModelFile(file File, option Options) error {
 
 	modelFileName := fmt.Sprintf("%s_model.go", normalizeWithUnderline(file.Name))
 	modelFileContet := buildModelContent(file.Name, modelId)
+	modelFilePath := fmt.Sprintf("%s\\%s", file.FilePaths["m"], normalizeNoWithUnderline(file.Name))
 
-	if err := createFileWithContent(modelFileName, modelFileContet, file.FilePaths["model"]); err != nil {
+	if err := createFileWithContent(modelFileName, modelFileContet, modelFilePath); err != nil {
 		return fmt.Errorf("erro ao criar o arquivo do model: %w", err)
 	}
 
@@ -343,7 +344,14 @@ func createResourceFile(file File, option Options) error {
 }
 
 func createFileWithContent(fileName, fileContent, filePath string) error {
+	if err := exists(filePath); err != nil {
+		if err := os.MkdirAll(filePath, 0755); err != nil {
+			return err
+		}
+	}
+
 	fullPath := filepath.Join(filePath, fileName)
+
 	osFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		return err

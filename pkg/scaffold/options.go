@@ -1,14 +1,13 @@
 package scaffold
 
 type Options struct {
-	Name             string
-	SeparateByFolder bool
-	Command          map[string]bool
+	Name    string
+	Command map[string]bool
+	RootDir string
 }
 type File struct {
-	Name             string
-	FilePaths        map[string]string
-	Content          string
-	SeparateByFolder bool
-	FileType         map[string]string
+	Name      string
+	FilePaths map[string]string
+	Content   string
+	FileType  map[string]string
 }
