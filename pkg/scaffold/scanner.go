@@ -54,11 +54,6 @@ func validatePathByKey(path string) (string, error) {
 func resolveFileDir(commands map[string]bool, rootPath string) (map[string]string, error) {
 	allPaths := make(map[string]string)
 
-	commands["controller"] = true
-	commands["service"] = true
-	commands["routes"] = true
-	commands["repository"] = true
-
 	for key, enabled := range commands {
 		if !enabled {
 			continue
@@ -80,7 +75,7 @@ func resolveFileDir(commands map[string]bool, rootPath string) (map[string]strin
 			fullPath = rootDir
 
 		default:
-			fullPath = rootPath + "\\" + rootDir
+			fullPath = filepath.Join(rootPath, rootDir)
 		}
 
 		validatedPath, err := validatePathByKey(fullPath)

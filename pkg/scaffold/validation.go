@@ -16,35 +16,34 @@ var (
 )
 
 const (
-	CommandModel            = "m"
-	CommandUUIDUse          = "uuid_use"
-	CommandIDUse            = "id_use"
-	CommandSeparateByFolder = "separate_by_folder"
-	CommandRequests         = "requests"
-	CommandResource         = "resource"
-	CommandSeed             = "seed"
-	CommandMigration        = "migration"
-	CommandController       = "controller"
+	CommandModel      = "m"
+	CommandUUIDUse    = "uuid_use"
+	CommandIDUse      = "id_use"
+	CommandRequests   = "requests"
+	CommandResource   = "resource"
+	CommandSeed       = "seed"
+	CommandMigration  = "migration"
+	CommandController = "controller"
 )
 
 var allowedCommands = map[string]struct{}{
-	CommandModel:            {},
-	CommandUUIDUse:          {},
-	CommandIDUse:            {},
-	CommandSeparateByFolder: {},
-	CommandRequests:         {},
-	CommandResource:         {},
-	CommandSeed:             {},
-	CommandMigration:        {},
-	CommandController:       {},
+	CommandModel:      {},
+	CommandUUIDUse:    {},
+	CommandIDUse:      {},
+	CommandRequests:   {},
+	CommandResource:   {},
+	CommandSeed:       {},
+	CommandMigration:  {},
+	CommandController: {},
 }
 
 func exists(s string) error {
-	if _, err := os.Stat(s); err != nil && errors.Is(err, os.ErrNotExist) {
+	_, err := os.Stat(s)
+	if err == nil {
 		return err
 	}
 
-	return nil
+	return err
 }
 
 func (o Options) Validate() error {
@@ -64,6 +63,10 @@ func (o Options) Validate() error {
 
 	uuidUse := o.Command[CommandUUIDUse]
 	idUse := o.Command[CommandIDUse]
+
+	if !uuidUse && !idUse {
+		return ErrIDTypeRequired
+	}
 
 	if uuidUse && idUse {
 		return ErrOnlyOneIDType

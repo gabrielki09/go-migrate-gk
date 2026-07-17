@@ -18,7 +18,8 @@ func main() {
 		seed       = flag.Bool("s", false, "Comando para criação do seeder")
 		migration  = flag.Bool("M", false, "Comando para criação da migration")
 		controller = flag.Bool("c", false, "Comando para criação do controller")
-		all        = flag.Bool("a", false, "Comando para separação de pastas por model")
+		all        = flag.Bool("a", false, "Comando -a habilitara os demais comandos, menos -repo, -uuid e -id")
+		repo       = flag.Bool("repo", false, "Comando para criação de repository pattern")
 	)
 
 	flag.Parse()
@@ -36,12 +37,18 @@ func main() {
 
 	if *all {
 		for key := range flags {
-			if key == "uuid_use" || key == "id_use" || key == "separate_by_folder" {
+			if key == "uuid_use" || key == "id_use" {
 				continue
 			}
 
 			flags[key] = true
 		}
+	}
+
+	if *repo {
+		flags["controller"] = true
+		flags["service"] = true
+		flags["routes"] = true
 	}
 
 	options := scaffold.Options{

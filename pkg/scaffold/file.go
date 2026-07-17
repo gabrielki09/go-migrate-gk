@@ -1,6 +1,7 @@
 package scaffold
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -345,9 +346,13 @@ func createResourceFile(file File, option Options) error {
 
 func createFileWithContent(fileName, fileContent, filePath string) error {
 	if err := exists(filePath); err != nil {
-		if err := os.MkdirAll(filePath, 0755); err != nil {
-			return err
+		if errors.Is(err, os.ErrNotExist) {
+			if err := os.MkdirAll(filePath, 0755); err != nil {
+				return err
+			}
 		}
+
+		return err
 	}
 
 	fullPath := filepath.Join(filePath, fileName)

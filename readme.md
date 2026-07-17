@@ -129,7 +129,6 @@ A flag `-model` e obrigatória. Por padrão, o gerador sempre cria o arquivo de 
 -model string  nome da model; obrigatória
 -uuid          usa UUID no model/resource e gen_random_uuid() na migration
 -id            usa ID int/BIGSERIAL explicitamente
--S             habilita a opção SeparateByFolder no código
 -R             cria request em requests/
 -r             cria resource/response em resource/
 -s             cria seed em seed/
@@ -142,7 +141,7 @@ Observações do comportamento atual:
 
 - Não use `-uuid` e `-id` juntos; o comando retorna erro.
 - Se nem `-uuid` nem `-id` forem informados, o comando retorna erro.
-- A flag `-a` habilita `model`, `requests`, `resource`, `seed`, `migration` e `controller`; ela não habilita `uuid`, `id` nem `separate_by_folder`.
+- A flag `-a` habilita `model`, `requests`, `resource`, `seed`, `migration` e `controller`; ela não habilita `uuid` e `id`.
 - Os diretórios são criados automaticamente quando não existem.
 
 Exemplos:
