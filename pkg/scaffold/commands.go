@@ -7,6 +7,7 @@ type CommandOptions struct {
 	Resource   bool
 	Seed       bool
 	Migration  bool
+	Repository bool
 	Controller bool
 	All        bool
 }
@@ -21,6 +22,7 @@ func NewCommandMap(options CommandOptions) map[string]bool {
 		CommandSeed:       options.Seed,
 		CommandMigration:  options.Migration,
 		CommandController: options.Controller,
+		CommandRepository: options.Repository,
 	}
 
 	if options.All {
