@@ -30,7 +30,6 @@ func NewCommandMap(options CommandOptions) map[string]bool {
 		commands[CommandResource] = true
 		commands[CommandSeed] = true
 		commands[CommandMigration] = true
-		commands[CommandController] = true
 	}
 
 	return commands
