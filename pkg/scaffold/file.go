@@ -1,7 +1,6 @@
 package scaffold
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,8 +11,8 @@ import (
 // Input: Financial Account
 // Output: financial_account
 func normalizeWithUnderline(name string) string {
-	name = strings.TrimSpace(name)
-	name = strings.ToLower(name)
+	name = globalTrimSpace(name)
+	name = globalToLower(name)
 	name = strings.ReplaceAll(name, "-", "_")
 	name = strings.ReplaceAll(name, " ", "_")
 
@@ -23,8 +22,8 @@ func normalizeWithUnderline(name string) string {
 // Input: Financial Account
 // Output: financialaccount
 func normalizeNoWithUnderline(name string) string {
-	name = strings.TrimSpace(name)
-	name = strings.ToLower(name)
+	name = globalTrimSpace(name)
+	name = globalToLower(name)
 	name = strings.ReplaceAll(name, "-", "")
 	name = strings.ReplaceAll(name, " ", "")
 	name = strings.ReplaceAll(name, "_", "")
@@ -33,7 +32,7 @@ func normalizeNoWithUnderline(name string) string {
 }
 
 func toPascalCase(value string) string {
-	value = strings.TrimSpace(value)
+	value = globalTrimSpace(value)
 	value = strings.ToLower(value)
 	value = strings.ReplaceAll(value, "-", "_")
 	value = strings.ReplaceAll(value, " ", "_")
@@ -43,7 +42,7 @@ func toPascalCase(value string) string {
 	var builder strings.Builder
 
 	for _, part := range parts {
-		part = strings.TrimSpace(part)
+		part = globalTrimSpace(part)
 
 		if part == "" {
 			continue
@@ -54,6 +53,336 @@ func toPascalCase(value string) string {
 	}
 
 	return builder.String()
+}
+
+func toKebabCase(value string) string {
+	value = globalTrimSpace(value)
+	value = globalToLower(value)
+	value = strings.ReplaceAll(value, " ", "-")
+	value = strings.ReplaceAll(value, "_", "-")
+
+	return value
+}
+
+func buildRepoPatternNames(name string) RepoPatternNames {
+	normalizedName := normalizeNoWithUnderline(name)
+	snakeName := normalizeWithUnderline(name)
+	pascalName := toPascalCase(name)
+
+	return RepoPatternNames{
+		NormalizedName: normalizedName,
+		SnakeName:      snakeName,
+		PascalName:     pascalName,
+
+		RoutesPackage:     normalizedName + "routes",
+		ControllerPackage: normalizedName + "controller",
+		ServicePackage:    normalizedName + "service",
+		RepositoryPackage: normalizedName + "repository",
+		RequestPackage:    normalizedName + "request",
+		ResponsePackage:   normalizedName + "response",
+
+		RoutesFuncName:     fmt.Sprintf("Register%sRoutes", pascalName),
+		ControllerFuncName: fmt.Sprintf("%sController", pascalName),
+		ServiceFuncName:    fmt.Sprintf("%sService", pascalName),
+		RepositoryFuncName: fmt.Sprintf("%sRepository", pascalName),
+		RequestFuncName:    fmt.Sprintf("%sRequest", pascalName),
+		ResponseFuncName:   fmt.Sprintf("%sResponse", pascalName),
+	}
+}
+
+func buildRoutesContent(file File, names RepoPatternNames) string {
+	baseImportPaths := fmt.Sprintf(
+		"%s/%s",
+		file.ModuleName,
+		invertBarPath(file.RootDir),
+	)
+
+	return fmt.Sprintf(`package %s
+
+import(
+	"net/http"
+
+	%s "%s/controller"
+	%s "%s/repository"
+	%s "%s/service"
+	
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func %s(r *http.ServeMux, db *pgxpool.Pool) {
+	repo := %s.New%s(db)
+	service := %s.New%s(repo)
+	controller := %s.New%s(service)
+
+	r.HandleFunc("GET /%s", controller.GetAll)
+	r.HandleFunc("GET /%s/{id}", controller.FindByID)
+	r.HandleFunc("POST /%s", controller.Create)
+	r.HandleFunc("PUT /%s/{id}", controller.Update)
+	r.HandleFunc("DELETE /%s/delete/{id}", controller.Delete)
+	r.HandleFunc("PATCH /%s/active/{id}", controller.Active)
+}
+	`,
+		names.RoutesPackage,
+
+		names.ControllerPackage,
+		baseImportPaths,
+
+		names.RepositoryPackage,
+		baseImportPaths,
+
+		names.ServicePackage,
+		baseImportPaths,
+
+		names.RoutesFuncName,
+		names.RepositoryPackage,
+		names.RepositoryFuncName,
+
+		names.ServicePackage,
+		names.ServiceFuncName,
+
+		names.ControllerPackage,
+		names.ControllerFuncName,
+
+		toKebabCase(names.SnakeName),
+		toKebabCase(names.SnakeName),
+		toKebabCase(names.SnakeName),
+		toKebabCase(names.SnakeName),
+		toKebabCase(names.SnakeName),
+		toKebabCase(names.SnakeName),
+	)
+}
+
+func buildControllerContent(names RepoPatternNames) string {
+	return fmt.Sprintf(`package %s
+
+import (
+	"context"
+
+	"net/http"
+)
+
+type %s interface {
+	GetAll(context.Context) (any, error) // add your_response in any
+	Create(context.Context, any) (any, error) // add your_response and request in any
+	Update(context.Context, any, int) (any, error) // add your_response and request in any
+	FindByID(context.Context, int) (any, error) // add your_response in any
+	Delete(context.Context, int) error
+	Active(context.Context, int) error
+}
+
+type %s struct {
+	service %s
+}
+
+func New%s(service %s) *%s {
+	return &%s{
+		service: service,
+	}
+}
+
+func (c *%s) GetAll(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Create(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) FindByID(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Update(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Delete(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Active(w http.ResponseWriter, r *http.Request) {
+}
+`,
+		names.ControllerPackage,
+		names.ServiceFuncName,
+		names.ControllerFuncName,
+		names.ServiceFuncName,
+		names.ControllerFuncName,
+		names.ServiceFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+		names.ControllerFuncName,
+	)
+}
+
+// TODO
+func buildServiceContent(file File, names RepoPatternNames) string {
+	return fmt.Sprintf(`package %s
+	
+import (
+	"context"
+
+	"net/http"
+)
+
+type %s interface {
+	GetAll(ctx context.Context) ([]any, error)
+	Create(ctx context.Context, payload any) (any, error)
+	Update(ctx context.Context, payload any, financialAccountId int) (any, error)
+	FindByID(ctx context.Context, financialAccountId int) (any, error)
+	Delete(ctx context.Context, financialAccountId int) error
+	Active(ctx context.Context, financialAccountId int) error
+}
+
+type %s struct {
+	repository %s
+}
+
+func New%s(repository %s) *%s {
+	return &%s{
+		repository: repository,
+	}
+}
+
+func (c *%s) GetAll(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Create(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) FindByID(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Update(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Delete(w http.ResponseWriter, r *http.Request) {
+}
+
+func (c *%s) Active(w http.ResponseWriter, r *http.Request) {
+}
+`,
+		names.ServicePackage,
+		names.RepositoryFuncName,
+		names.ServiceFuncName,
+		names.RepositoryFuncName,
+		names.ServiceFuncName,
+		names.RepositoryFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+		names.ServiceFuncName,
+	)
+}
+
+func buildRepositoryContent(names RepoPatternNames) string {
+	return fmt.Sprintf(`package %s
+
+import (
+	"context"
+	
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type %s struct {
+	db *pgxpool.Pool
+}
+
+func New%s(db *pgxpool.Pool) *%s {
+	return &%s{
+		db: db,
+	}
+}
+
+func (f *%s) GetAll(ctx context.Context) ([]any, error) {
+	return nil, nil
+}
+
+func (f *%s) Create(ctx context.Context, payload any) (any, error) {
+	return nil, nil
+}
+
+func (f *%s) Update(ctx context.Context, payload any, financialAccountId int) (any, error) {
+	return nil, nil
+}
+
+func (f *%s) FindByID(ctx context.Context, financialAccountId int) (any, error) {
+	return nil, nil
+}
+
+func (f *%s) Delete(ctx context.Context, financialAccountId int) error {
+	return nil
+}
+
+func (f *%s) Active(ctx context.Context, financialAccountId int) error {
+	return nil
+}
+
+
+	`,
+		names.RepositoryPackage,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+		names.RepositoryFuncName,
+	)
+}
+
+// TODO
+func createRepoPatternFiles(file File, option Options) error {
+	repoPatternNames := buildRepoPatternNames(file.Name)
+
+	routesFileName := fmt.Sprintf("%s_routes.go", normalizeWithUnderline(file.Name))
+	routesFileContent := buildRoutesContent(file, repoPatternNames)
+	routesFilePath := file.FilePaths["routes"]
+
+	if err := createFileWithContent(routesFileName, routesFileContent, routesFilePath); err != nil {
+		return err
+	}
+
+	controllerFileName := fmt.Sprintf("%s_controller.go", normalizeWithUnderline(file.Name))
+	controllerFileContent := buildControllerContent(repoPatternNames)
+	controllerFilePath := file.FilePaths["controller"]
+	if err := createFileWithContent(controllerFileName, controllerFileContent, controllerFilePath); err != nil {
+		return err
+	}
+
+	serviceFileName := fmt.Sprintf("%s_service.go", normalizeWithUnderline(file.Name))
+	serviceFileContent := buildServiceContent(file, repoPatternNames)
+	serviceFilePath := filepath.Join(file.FilePaths["service"])
+	if err := createFileWithContent(serviceFileName, serviceFileContent, serviceFilePath); err != nil {
+		return err
+	}
+
+	repositoryFileName := fmt.Sprintf("%s_repository.go", normalizeWithUnderline(file.Name))
+	repositoryFileContent := buildRepositoryContent(repoPatternNames)
+	repositoryFilePath := file.FilePaths["repo"]
+	if err := createFileWithContent(repositoryFileName, repositoryFileContent, repositoryFilePath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createControllerFile(file File, option Options) error {
+	controllerFileName := fmt.Sprintf("%s_controller.go", normalizeWithUnderline(file.Name))
+	controllerFileContent := buildControllerContent(buildRepoPatternNames(file.Name))
+
+	if err := createFileWithContent(controllerFileName, controllerFileContent, file.FilePaths["controller"]); err != nil {
+		return fmt.Errorf("erro ao criar o arquivo do controller: %w", err)
+	}
+
+	return nil
 }
 
 func buildModelContent(model, usageId string) string {
@@ -87,7 +416,7 @@ func createModelFile(file File, option Options) error {
 
 	modelFileName := fmt.Sprintf("%s_model.go", normalizeWithUnderline(file.Name))
 	modelFileContet := buildModelContent(file.Name, modelId)
-	modelFilePath := fmt.Sprintf("%s\\%s", file.FilePaths["m"], normalizeNoWithUnderline(file.Name))
+	modelFilePath := filepath.Join(file.FilePaths["m"], normalizeNoWithUnderline(file.Name))
 
 	if err := createFileWithContent(modelFileName, modelFileContet, modelFilePath); err != nil {
 		return fmt.Errorf("erro ao criar o arquivo do model: %w", err)
@@ -142,77 +471,6 @@ func createMigrationFile(file File, option Options) error {
 
 	if err := createFileWithContent(migrationDownFileName, migrationDownContent, file.FilePaths["migration"]); err != nil {
 		return fmt.Errorf("erro ao criar o arquivo .down da migration: %w", err)
-	}
-
-	return nil
-}
-
-func buildControllerContent(controller string) string {
-	packageName := normalizeNoWithUnderline(controller) + "controller"
-	pascalController := toPascalCase(controller)
-
-	pascalControllerWithService := pascalController + "Service"
-	pascalControllerWithController := pascalController + "Controller"
-
-	content := fmt.Sprintf(`package %s
-
-import (
-	"net/http"
-)
-
-type %s interface {
-}
-
-type %s struct {
-	service %s
-}
-
-func New%s(service %s) *%s {
-	return &%s{
-		service: service,
-	}
-}
-
-func (c *%s) GetAll(w http.ResponseWriter, r *http.Request) {
-}
-
-func (c *%s) Create(w http.ResponseWriter, r *http.Request) {
-}
-
-func (c *%s) FindByID(w http.ResponseWriter, r *http.Request) {
-}
-
-func (c *%s) Update(w http.ResponseWriter, r *http.Request) {
-}
-
-func (c *%s) Delete(w http.ResponseWriter, r *http.Request) {
-}
-`,
-		packageName,
-		pascalControllerWithService,
-		pascalControllerWithController,
-		pascalControllerWithService,
-		pascalControllerWithController,
-		pascalControllerWithService,
-		pascalControllerWithController,
-		pascalControllerWithController,
-
-		pascalControllerWithController,
-		pascalControllerWithController,
-		pascalControllerWithController,
-		pascalControllerWithController,
-		pascalControllerWithController,
-	)
-
-	return content
-}
-
-func createControllerFile(file File, option Options) error {
-	controllerFileName := fmt.Sprintf("%s_controller.go", normalizeWithUnderline(file.Name))
-	controllerFileContent := buildControllerContent(file.Name)
-
-	if err := createFileWithContent(controllerFileName, controllerFileContent, file.FilePaths["controller"]); err != nil {
-		return fmt.Errorf("erro ao criar o arquivo do controller: %w", err)
 	}
 
 	return nil
@@ -345,13 +603,7 @@ func createResourceFile(file File, option Options) error {
 }
 
 func createFileWithContent(fileName, fileContent, filePath string) error {
-	if err := exists(filePath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			if err := os.MkdirAll(filePath, 0755); err != nil {
-				return err
-			}
-		}
-
+	if err := createInformedPath(filePath, 0755); err != nil {
 		return err
 	}
 
@@ -376,12 +628,17 @@ func createFiles(file File, option Options) error {
 		return err
 	}
 
+	if option.Command["repo"] {
+		option.Command["controller"] = false
+	}
+
 	fileCreators := map[string]func(File, Options) error{
 		"migration":  createMigrationFile,
-		"controller": createControllerFile,
 		"requests":   createRequestFile,
 		"seed":       createSeedFile,
 		"resource":   createResourceFile,
+		"repo":       createRepoPatternFiles,
+		"controller": createControllerFile,
 	}
 
 	for key, enabled := range option.Command {

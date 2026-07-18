@@ -1,8 +1,8 @@
 # go-scaffold-gk
 
-Ferramenta pessoal para migrations PostgreSQL usando `pgxpool`, com um gerador simples de arquivos base em Go.
+Scaffold em Go para criar estruturas comuns de aplicações com PostgreSQL. O projeto gera arquivos base para model, migration, request, response, seed, controller e um esqueleto de repository pattern.
 
-A lib foi feita para o meu fluxo pessoal. Ela não pretende substituir ferramentas maduras como `golang-migrate` ou `goose`.
+O pacote de migrations continua disponível, mas o foco principal do projeto é acelerar a criação da estrutura inicial de módulos Go.
 
 ## Instalação
 
@@ -10,7 +10,102 @@ A lib foi feita para o meu fluxo pessoal. Ela não pretende substituir ferrament
 go get github.com/gabrielki09/go-scaffold-gk@latest
 ```
 
+## Gerador de Scaffold
+
+Uso local:
+
+```bash
+go run ./cmd/main.go -m users -id
+```
+
+Uso com UUID:
+
+```bash
+go run ./cmd/main.go -m users -uuid
+```
+
+Por padrão, o scaffold sempre cria a model em `models/`.
+
+## Flags
+
+```txt
+-m string       nome do recurso/model; obrigatória
+-uuid           usa UUID no model, response e migration
+-id             usa ID int/BIGSERIAL
+-R              cria request
+-r              cria response/resource
+-s              cria seed
+-M              cria migration
+-c              cria controller
+-a              cria todos os arquivos opcionais, exceto -repo, -uuid e -id
+-repo           cria estrutura de repository pattern
+-path string    caminho raiz para estrutura repository pattern
+-create-path    cria o caminho informado em -path caso ele não exista
+```
+
+## Exemplos
+
+Criar somente model com ID inteiro:
+
+```bash
+go run ./cmd/main.go -m users -id
+```
+
+Criar model e migration com UUID:
+
+```bash
+go run ./cmd/main.go -m users -uuid -M
+```
+
+Criar model, request, response, seed, migration e controller:
+
+```bash
+go run ./cmd/main.go -m users -uuid -a
+```
+
+Criar estrutura com repository pattern:
+
+```bash
+go run ./cmd/main.go -m users -uuid -repo -path=internal/modules/user -create-path
+```
+
+## Estrutura Gerada
+
+Com:
+
+```bash
+go run ./cmd/main.go -m users -uuid -repo -path=internal/modules/user -create-path
+```
+
+A estrutura esperada é:
+
+```txt
+models/
+  users/
+    users_model.go
+
+internal/modules/user/
+  routes/
+    users_routes.go
+  controller/
+    users_controller.go
+  service/
+    users_service.go
+  repository/
+    users_repository.go
+```
+
+## Regras de Validação
+
+- `-m` é obrigatório.
+- É obrigatório informar `-uuid` ou `-id`.
+- `-uuid` e `-id` não podem ser usados juntos.
+- Quando `-repo` é usado, `-path` deve apontar para o diretório raiz do módulo.
+- Quando `-create-path` não é usado, o diretório informado em `-path` precisa existir.
+
 ## Migrations
+
+Além do scaffold, o projeto fornece um runner simples de migrations PostgreSQL usando `pgxpool`.
 
 Importe o pacote:
 
@@ -18,7 +113,7 @@ Importe o pacote:
 import migrator "github.com/gabrielki09/go-scaffold-gk/pkg/migration"
 ```
 
-Exemplo de uso:
+Exemplo:
 
 ```go
 package main
@@ -41,10 +136,11 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := migrator.Run(ctx, db, migrator.Options{
+	err = migrator.Run(ctx, db, migrator.Options{
 		Dir:     "database/migration",
 		Command: migrator.CommandUp,
-	}); err != nil {
+	})
+	if err != nil {
 		log.Fatal(err)
 	}
 }
@@ -52,7 +148,7 @@ func main() {
 
 Se `Dir` ficar vazio, o pacote usa `database/migration` a partir do diretório atual.
 
-### Padrão dos arquivos
+### Formato das Migrations
 
 Cada migration precisa ter um arquivo `.up.sql` e um `.down.sql` com a mesma versão e o mesmo nome:
 
@@ -87,7 +183,7 @@ CREATE TABLE IF NOT EXISTS users (
 DROP TABLE IF EXISTS users;
 ```
 
-### Comandos disponiveis
+### Comandos de Migration
 
 ```go
 migrator.CommandUp
@@ -96,63 +192,13 @@ migrator.CommandFresh
 migrator.CommandStatus
 ```
 
-Equivalentes aos comandos:
-
 - `up`: aplica migrations pendentes em ordem crescente.
-- `down`: desfaz a ultima migration aplicada.
+- `down`: desfaz a última migration aplicada.
 - `fresh`: desfaz todas as migrations aplicadas e depois roda `up`.
 - `status`: imprime o status de cada migration como `applied` ou `pending`.
 
 O pacote cria automaticamente a tabela `schema_migrations` quando necessário.
 
-## Gerador de arquivos
+## Status Atual
 
-O gerador fica em `cmd/model` e cria arquivos base para model, migration, controller, request, resource e seed.
-
-Uso local no repositório:
-
-```bash
-go run ./cmd/model -model users
-```
-
-Uso via modulo:
-
-```bash
-go run github.com/gabrielki09/go-scaffold-gk/cmd/model@latest -model users
-```
-
-A flag `-model` e obrigatória. Por padrão, o gerador sempre cria o arquivo de model em `models/`.
-
-### Flags reais
-
-```txt
--model string  nome da model; obrigatória
--uuid          usa UUID no model/resource e gen_random_uuid() na migration
--id            usa ID int/BIGSERIAL explicitamente
--R             cria request em requests/
--r             cria resource/response em resource/
--s             cria seed em seed/
--m             cria migration em migration/
--c             cria controller em controller/
--a             cria todos os arquivos opcionais, exceto escolha de id
-```
-
-Observações do comportamento atual:
-
-- Não use `-uuid` e `-id` juntos; o comando retorna erro.
-- Se nem `-uuid` nem `-id` forem informados, o comando retorna erro.
-- A flag `-a` habilita `model`, `requests`, `resource`, `seed`, `migration` e `controller`; ela não habilita `uuid` e `id`.
-- Os diretórios são criados automaticamente quando não existem.
-
-Exemplos:
-
-```bash
-# cria somente model em models/
-go run ./cmd/model -model users
-
-# cria model e migration
-go run ./cmd/model -model users -m
-
-# cria model, migration, request, resource, seed e controller usando UUID
-go run ./cmd/model -model users -uuid -a
-```
+Este projeto está em evolução para ser um scaffold mais completo. Alguns templates gerados ainda são esqueletos iniciais e devem ser ajustados conforme o padrão final da aplicação.

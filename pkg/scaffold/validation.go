@@ -16,31 +16,42 @@ var (
 )
 
 const (
-	CommandModel      = "m"
-	CommandUUIDUse    = "uuid_use"
-	CommandIDUse      = "id_use"
-	CommandRequests   = "requests"
-	CommandResource   = "resource"
-	CommandSeed       = "seed"
-	CommandMigration  = "migration"
-	CommandController = "controller"
+	CommandModel          = "m"
+	CommandUUIDUse        = "uuid_use"
+	CommandIDUse          = "id_use"
+	CommandRequests       = "requests"
+	CommandResource       = "resource"
+	CommandSeed           = "seed"
+	CommandMigration      = "M"
+	CommandRepository     = "repo"
+	CommandController     = "controller"
+	CommandCreateRepoPath = "create_repo_path"
+
+	CommandRoutes  = "routes"
+	CommandService = "service"
 )
 
 var allowedCommands = map[string]struct{}{
-	CommandModel:      {},
-	CommandUUIDUse:    {},
-	CommandIDUse:      {},
-	CommandRequests:   {},
-	CommandResource:   {},
-	CommandSeed:       {},
-	CommandMigration:  {},
-	CommandController: {},
+	CommandModel:          {},
+	CommandUUIDUse:        {},
+	CommandIDUse:          {},
+	CommandRequests:       {},
+	CommandResource:       {},
+	CommandSeed:           {},
+	CommandMigration:      {},
+	CommandController:     {},
+	CommandRepository:     {},
+	CommandCreateRepoPath: {},
+
+	// For repo pattern
+	CommandRoutes:  {},
+	CommandService: {},
 }
 
 func exists(s string) error {
 	_, err := os.Stat(s)
 	if err == nil {
-		return err
+		return nil
 	}
 
 	return err
@@ -72,12 +83,16 @@ func (o Options) Validate() error {
 		return ErrOnlyOneIDType
 	}
 
-	if o.RootDir == "" {
-		return ErrRootDirRequired
-	}
-
-	if err := exists(o.RootDir); err != nil {
-		return ErrRootDirNotExists
+	if o.Command["repo"] {
+		if !o.Command["create_repo_path"] {
+			if err := exists(o.RootDir); err != nil {
+				return ErrRootDirNotExists
+			}
+		} else {
+			if err := createInformedPath(o.RootDir, 0755); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

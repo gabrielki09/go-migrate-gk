@@ -10,9 +10,16 @@ func Run(option Options) error {
 		return err
 	}
 
+	goMod, err := getModuleName()
+	if err != nil {
+		return err
+	}
+
 	fileConfig := File{
-		Name:      option.Name,
-		FilePaths: dirs,
+		Name:       option.Name,
+		FilePaths:  dirs,
+		ModuleName: goMod,
+		RootDir:    option.RootDir,
 	}
 
 	return createFiles(fileConfig, option)

@@ -1,9 +1,11 @@
 package scaffold
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -14,28 +16,29 @@ const (
 	defaultRootMigrationDir = "migration"
 
 	// Repo Pattern
+	defaultRootRepositoryDir = "repository"
+	defaultRootRoutesDir     = "routes"
 	defaultRootControllerDir = "controller"
 	defaultRootServiceDir    = "service"
-	defaultRootRoutesDir     = "routes"
-	defaultRootRepositoryDir = "repository"
 )
 
 var commandRootDirs = map[string]string{
-	"m":         defaultRootModelDir,
-	"migration": defaultRootMigrationDir,
-	"requests":  defaultRootRequestDir,
-	"resource":  defaultRootResourceDir,
-	"seed":      defaultRootSeedDir,
+	"m":        defaultRootModelDir,
+	"M":        defaultRootMigrationDir,
+	"requests": defaultRootRequestDir,
+	"resource": defaultRootResourceDir,
+	"seed":     defaultRootSeedDir,
 
+	"repo":       defaultRootRepositoryDir,
+	"routes":     defaultRootRoutesDir,
 	"controller": defaultRootControllerDir,
 	"service":    defaultRootServiceDir,
-	"routes":     defaultRootRoutesDir,
-	"repository": defaultRootRepositoryDir,
 }
 
 var technicalCommands = map[string]bool{
-	"uuid_use": true,
-	"id_use":   true,
+	"uuid_use":         true,
+	"id_use":           true,
+	"create_repo_path": true, // Add to pass in command validation,
 }
 
 func validatePathByKey(path string) (string, error) {
@@ -44,7 +47,7 @@ func validatePathByKey(path string) (string, error) {
 		return "", err
 	}
 
-	if err := os.MkdirAll(fullPath, 0755); err != nil {
+	if err := createInformedPath(fullPath, 0755); err != nil {
 		return "", err
 	}
 
@@ -87,4 +90,29 @@ func resolveFileDir(commands map[string]bool, rootPath string) (map[string]strin
 	}
 
 	return allPaths, nil
+}
+
+func getModuleName() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	fileByte, err := os.ReadFile(filepath.Join(wd, "go.mod"))
+	if err != nil {
+		return "", err
+	}
+
+	firstLine := strings.TrimSpace(string(bytes.SplitN(fileByte, []byte("\n"), 2)[0]))
+	if firstLine == "" {
+		return "your_module", nil
+	}
+
+	parts := strings.Fields(firstLine)
+
+	if len(parts) < 2 || parts[0] != "module" {
+		return "your_module", nil
+	}
+
+	return parts[1], nil
 }
